@@ -125,6 +125,7 @@ namespace HP_34401A
         SolidColorBrush Selected = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00CE30"));
         SolidColorBrush Deselected = new SolidColorBrush((Color)ColorConverter.ConvertFromString("White"));
 
+        //Options for Measurement Data sampling speed
         double UpdateSpeed = 500;
 
         //COM Select Window
