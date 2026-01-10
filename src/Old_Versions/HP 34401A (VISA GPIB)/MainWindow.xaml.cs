@@ -1167,118 +1167,82 @@ namespace HP_34401A
 
         private void Read_Measurement()
         {
-            string data = Query("READ?").Trim();
-            if (data.Length == 15)
+            Write("INIT");
+
+            System.Threading.Thread.Sleep(520);
+
+            string dataRaw = Query("FETCH?");
+            if (string.IsNullOrEmpty(dataRaw)) return;
+
+            string[] samples = dataRaw.Split(',');
+            int count = samples.Length;
+
+            DateTime endTime = DateTime.Now;
+            DateTime startTime = endTime.AddMilliseconds(-count);
+
+            for (int i = 0; i < count; i++)
             {
-                measurements.Add(data);
-                Total_Samples++;
-                if (saveMeasurements == true || save_to_Table == true || save_to_Graph == true || Save_to_N_Graph == true || Save_to_DateTime_Graph == true)
+                string val = samples[i].Trim();
+                if (val.Length >= 10)
                 {
-                    Process_Measurement_Data(data);
+                    DateTime sampleTime = startTime.AddMilliseconds(i);
+                    Process_Measurement_Data(val, sampleTime);
+                    Total_Samples++;
+                }
+                else
+                {
+                    Invalid_Samples++;
                 }
             }
-            else
-            {
-                Invalid_Samples++;
-                insert_Log(data, 1);
-            }
-
         }
 
-        private void Process_Measurement_Data(string data)
+        private void Process_Measurement_Data(string data, DateTime sampleTime)
         {
-            string Date = DateTime.Now.ToString("yyyy-MM-dd h:mm:ss.fff tt");
+            string Date = sampleTime.ToString("yyyy-MM-dd h:mm:ss.fff tt");
+
             if (saveMeasurements == true)
             {
                 switch (Selected_Measurement_type)
                 {
-                    case 0:
-                        save_data_VDC.Add(Date + "," + data);
-                        break;
-                    case 1:
-                        save_data_ADC.Add(Date + "," + data);
-                        break;
-                    case 2:
-                        save_data_VAC.Add(Date + "," + data);
-                        break;
-                    case 3:
-                        save_data_AAC.Add(Date + "," + data);
-                        break;
-                    case 4:
-                        save_data_2Ohm.Add(Date + "," + data);
-                        break;
-                    case 5:
-                        save_data_4Ohm.Add(Date + "," + data);
-                        break;
-                    case 6:
-                        save_data_FREQ.Add(Date + "," + data);
-                        break;
-                    case 7:
-                        save_data_PER.Add(Date + "," + data);
-                        break;
-                    case 8:
-                        save_data_DIODE.Add(Date + "," + data);
-                        break;
-                    case 9:
-                        save_data_CONT.Add(Date + "," + data);
-                        break;
-                    default:
-                        insert_Log("Data was not saved. Something went wrong.", 0);
-                        break;
+                    case 0: save_data_VDC.Add(Date + "," + data); break;
+                    case 1: save_data_ADC.Add(Date + "," + data); break;
+                    case 2: save_data_VAC.Add(Date + "," + data); break;
+                    case 3: save_data_AAC.Add(Date + "," + data); break;
+                    case 4: save_data_2Ohm.Add(Date + "," + data); break;
+                    case 5: save_data_4Ohm.Add(Date + "," + data); break;
+                    case 6: save_data_FREQ.Add(Date + "," + data); break;
+                    case 7: save_data_PER.Add(Date + "," + data); break;
+                    case 8: save_data_DIODE.Add(Date + "," + data); break;
+                    case 9: save_data_CONT.Add(Date + "," + data); break;
                 }
             }
 
-            if (save_to_Table == true)
+            this.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
             {
-                try
+                if (save_to_Table == true)
                 {
-                    HP34401A_Table.Table_Data_Queue.Add(Date + "," + data + "," + Current_Measurement_Unit);
+                    try { HP34401A_Table.Table_Data_Queue.Add(Date + "," + data + "," + Current_Measurement_Unit); }
+                    catch { }
                 }
-                catch (Exception)
-                {
-                    insert_Log("Could not add data to Table Window.", 2);
-                    insert_Log("This could happen if the table window was opened or closed recently.", 2);
-                }
-            }
 
-            if (save_to_Graph == true)
-            {
-                try
+                if (save_to_Graph == true)
                 {
-                    HP34401A_Graph_Window.Data_Queue.Add(Date + "," + data);
+                    try { HP34401A_Graph_Window.Data_Queue.Add(Date + "," + data); }
+                    catch { }
                 }
-                catch (Exception)
-                {
-                    insert_Log("Could not add data to Graph Window.", 2);
-                    insert_Log("This could happen if the Graph Window was opened or closed recently.", 2);
-                }
-            }
 
-            if (Save_to_N_Graph == true)
-            {
-                try
+                if (Save_to_N_Graph == true)
                 {
-                    HP34401A_N_Graph_Window.Data_Queue.Add(Date + "," + data);
+                    try { HP34401A_N_Graph_Window.Data_Queue.Add(Date + "," + data); }
+                    catch { }
                 }
-                catch (Exception)
-                {
-                    insert_Log("Could not add data to N Sample Graph Window.", 2);
-                    insert_Log("This could happen if the N Sample Graph Window was opened or closed recently.", 2);
-                }
-            }
 
-            if (Save_to_DateTime_Graph == true)
-            {
-                try
+                if (Save_to_DateTime_Graph == true)
                 {
-                    HP34401A_DateTime_Graph_Window.Data_Queue.Add(Date + "," + data);
+                    try { HP34401A_DateTime_Graph_Window.Data_Queue.Add(Date + "," + data); }
+                    catch { }
                 }
-                catch (Exception)
-                {
-                    insert_Log("Could not add data to DateTime Graph Window.", 2);
-                    insert_Log("This could happen if the DateTime Graph Window was opened or closed recently.", 2);
-                }
-            }
+            }));
         }
 
         private void Serial_WriteQueue()
@@ -1692,6 +1656,7 @@ namespace HP_34401A
         {
             if (Measurement_Selected == 0)
             {
+                Write("CONF:VOLT:DC 10; :VOLT:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "VDC";
@@ -1705,6 +1670,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 1)
             {
+                Write("CONF:CURR:DC 1; :CURR:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "ADC";
@@ -1718,6 +1684,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 2)
             {
+                Write("CONF:VOLT:AC 10; :SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "VAC";
@@ -1731,32 +1698,21 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 3)
             {
+                Write("CONF:CURR:AC 1; :SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "AAC";
                     Measurement_Scale.Content = "";
                     Measurement_Value.Content = "";
-                    MIN_Type.Content = "ADC";
-                    MAX_Type.Content = "ADC";
-                    AVG_Type.Content = "ADC";
-                    Current_Measurement_Unit = "ADC";
+                    MIN_Type.Content = "AAC";
+                    MAX_Type.Content = "AAC";
+                    AVG_Type.Content = "AAC";
+                    Current_Measurement_Unit = "AAC";
                 }));
             }
-            else if (Measurement_Selected == 4)
+            else if (Measurement_Selected == 4 || Measurement_Selected == 5)
             {
-                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
-                {
-                    Measurement_Type.Content = "Ω";
-                    Measurement_Scale.Content = "";
-                    Measurement_Value.Content = "";
-                    MIN_Type.Content = "Ω";
-                    MAX_Type.Content = "Ω";
-                    AVG_Type.Content = "Ω";
-                    Current_Measurement_Unit = "Ω";
-                }));
-            }
-            else if (Measurement_Selected == 5)
-            {
+                Write("CONF:RES; :RES:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "Ω";
@@ -1770,6 +1726,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 6)
             {
+                Write("CONF:FREQ; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "Hz";
@@ -1783,6 +1740,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 7)
             {
+                Write("CONF:PER; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "SEC";
@@ -1796,6 +1754,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 8)
             {
+                Write("CONF:DIOD; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "VDC";
@@ -1809,6 +1768,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 9)
             {
+                Write("CONF:CONT; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "Ω";
