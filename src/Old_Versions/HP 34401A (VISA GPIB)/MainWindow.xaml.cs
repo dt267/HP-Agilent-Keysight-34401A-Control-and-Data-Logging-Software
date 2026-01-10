@@ -126,7 +126,7 @@ namespace HP_34401A
         SolidColorBrush Deselected = new SolidColorBrush((Color)ColorConverter.ConvertFromString("White"));
 
         //Options for Measurement Data sampling speed
-        double UpdateSpeed = 1000;
+        double UpdateSpeed = 500;
 
         //COM Select Window
         GPIB_Select_Window GPIB_Select;
@@ -659,7 +659,7 @@ namespace HP_34401A
         {
             if (UpdateSpeed > 2000)
             {
-                DataTimer.Interval = 0.01;
+                DataTimer.Interval = 0.005;
             }
         }
 
@@ -719,7 +719,7 @@ namespace HP_34401A
         private void Create_GetDataTimer()
         {
             DataTimer = new System.Timers.Timer();
-            DataTimer.Interval = 1000;
+            DataTimer.Interval = 500;
             DataTimer.Elapsed += HP34401ACommunicateEvent;
             DataTimer.AutoReset = false;
         }
@@ -5547,7 +5547,7 @@ namespace HP_34401A
         private void UpdateSpeed_Default_Set_Button_Click(object sender, RoutedEventArgs e)
         {
             insert_Log("You may to wait for " + (UpdateSpeed / 1000) + " seconds before your new update speed takes effect.", 2);
-            UpdateSpeed = 1000;
+            UpdateSpeed = 500;
             insert_Log("Update Speed set to " + (UpdateSpeed / 1000) + " seconds Command Send.", 5);
             UpdateSpeed_Selector(1);
             isUpdateSpeed_Changed = true;
@@ -5556,7 +5556,7 @@ namespace HP_34401A
         private void UpdateSpeed_Fast_Set_Button_Click(object sender, RoutedEventArgs e)
         {
             insert_Log("You may to wait for " + (UpdateSpeed / 1000) + " seconds before your new update speed takes effect.", 2);
-            UpdateSpeed = 10;
+            UpdateSpeed = 5;
             insert_Log("Update Speed set to " + (UpdateSpeed / 1000) + " seconds Command Send.", 5);
             UpdateSpeed_Selector(2);
             isUpdateSpeed_Changed = true;
