@@ -1468,7 +1468,7 @@
                     </Grid.RowDefinitions>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0">
                         <Label Content="Update Rate (sec):"/>
-                        <TextBox x:Name="UpdateSpeed_Value" Text="0.5" MinWidth="50" MaxWidth="50" Height="22" VerticalContentAlignment="Center"/>
+                        <TextBox x:Name="UpdateSpeed_Value" Text="0.005" MinWidth="50" MaxWidth="50" Height="22" VerticalContentAlignment="Center"/>
                         <Border x:Name="UpdateSpeed_Value_Set_Border" BorderThickness="2" BorderBrush="White" Margin="3,0,0,0">
                             <Button x:Name="UpdateSpeed_Value_Set_Button" Content="Set" Width="35" BorderThickness="0" Click="UpdateSpeed_Value_Set_Button_Click"/>
                         </Border>

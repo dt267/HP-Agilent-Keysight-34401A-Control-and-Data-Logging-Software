@@ -126,7 +126,7 @@ namespace HP_34401A
         SolidColorBrush Deselected = new SolidColorBrush((Color)ColorConverter.ConvertFromString("White"));
 
         //Options for Measurement Data sampling speed
-        double UpdateSpeed = 500;
+        double UpdateSpeed = 5;
 
         //COM Select Window
         GPIB_Select_Window GPIB_Select;
@@ -441,6 +441,9 @@ namespace HP_34401A
                 Stop_Sampling.IsEnabled = true;
                 DataTimer.Enabled = true;
                 StartDateTime = DateTime.Now;
+
+                Write("INIT");
+
                 Data_process();
                 saveMeasurements_Timer.Enabled = true;
                 Sampling_Only.IsEnabled = true;
@@ -719,7 +722,7 @@ namespace HP_34401A
         private void Create_GetDataTimer()
         {
             DataTimer = new System.Timers.Timer();
-            DataTimer.Interval = 500;
+            DataTimer.Interval = 5;
             DataTimer.Elapsed += HP34401ACommunicateEvent;
             DataTimer.AutoReset = false;
         }
@@ -1116,6 +1119,7 @@ namespace HP_34401A
                     Measurement_Type_Select();
                     unlockControls();
                     isUserSendCommand = false;
+                    Write("INIT");
                     if (UpdateSpeed > 2000)
                     {
                         Restore_Interval();
@@ -1164,14 +1168,12 @@ namespace HP_34401A
                 DataTimer.Enabled = true;
             }
         }
-
         private void Read_Measurement()
         {
+            string dataRaw = Query("FETCH?");
+
             Write("INIT");
 
-            System.Threading.Thread.Sleep(520);
-
-            string dataRaw = Query("FETCH?");
             if (string.IsNullOrEmpty(dataRaw)) return;
 
             string[] samples = dataRaw.Split(',');
@@ -1247,6 +1249,19 @@ namespace HP_34401A
 
         private void Serial_WriteQueue()
         {
+            // Kiểm tra nếu có lệnh cần gửi, buộc máy đo về trạng thái Idle trước
+            if (SerialWriteQueue.Count > 0)
+            {
+                try
+                {
+                    Write("ABORt");
+                }
+                catch (Exception)
+                {
+                    // Bỏ qua lỗi nếu việc Abort thất bại, để chương trình tiếp tục thử gửi lệnh
+                }
+            }
+
             while (SerialWriteQueue.Count != 0)
             {
                 string WriteCommand = SerialWriteQueue.Take();
@@ -1656,7 +1671,7 @@ namespace HP_34401A
         {
             if (Measurement_Selected == 0)
             {
-                Write("CONF:VOLT:DC 10; :VOLT:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
+                Write("CONF:VOLT:DC 10; :VOLT:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "VDC";
@@ -1670,7 +1685,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 1)
             {
-                Write("CONF:CURR:DC 1; :CURR:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
+                Write("CONF:CURR:DC 1; :CURR:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "ADC";
@@ -1684,7 +1699,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 2)
             {
-                Write("CONF:VOLT:AC 10; :SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
+                Write("CONF:VOLT:AC 10; :SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "VAC";
@@ -1698,7 +1713,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 3)
             {
-                Write("CONF:CURR:AC 1; :SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
+                Write("CONF:CURR:AC 1; :SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "AAC";
@@ -1712,7 +1727,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 4 || Measurement_Selected == 5)
             {
-                Write("CONF:RES; :RES:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
+                Write("CONF:RES; :RES:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "Ω";
@@ -1726,7 +1741,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 6)
             {
-                Write("CONF:FREQ; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
+                Write("CONF:FREQ; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "Hz";
@@ -1740,7 +1755,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 7)
             {
-                Write("CONF:PER; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
+                Write("CONF:PER; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "SEC";
@@ -1754,7 +1769,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 8)
             {
-                Write("CONF:DIOD; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
+                Write("CONF:DIOD; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "VDC";
@@ -1768,7 +1783,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 9)
             {
-                Write("CONF:CONT; :SAMP:COUN 512; :TRIG:SOUR IMM; :DISP OFF");
+                Write("CONF:CONT; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "Ω";
@@ -1897,6 +1912,9 @@ namespace HP_34401A
             else
             {
                 StartDateTime = DateTime.Now;
+
+                Write("INIT");
+
                 DataSampling = true;
             }
             if (DataSampling == true)
@@ -5507,7 +5525,7 @@ namespace HP_34401A
         private void UpdateSpeed_Default_Set_Button_Click(object sender, RoutedEventArgs e)
         {
             insert_Log("You may to wait for " + (UpdateSpeed / 1000) + " seconds before your new update speed takes effect.", 2);
-            UpdateSpeed = 500;
+            UpdateSpeed = 5;
             insert_Log("Update Speed set to " + (UpdateSpeed / 1000) + " seconds Command Send.", 5);
             UpdateSpeed_Selector(1);
             isUpdateSpeed_Changed = true;
