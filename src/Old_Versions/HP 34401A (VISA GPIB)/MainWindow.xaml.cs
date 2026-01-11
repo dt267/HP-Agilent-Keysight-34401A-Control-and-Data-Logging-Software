@@ -126,7 +126,7 @@ namespace HP_34401A
         SolidColorBrush Deselected = new SolidColorBrush((Color)ColorConverter.ConvertFromString("White"));
 
         //Options for Measurement Data sampling speed
-        double UpdateSpeed = 5;
+        double UpdateSpeed = 200;
 
         //COM Select Window
         GPIB_Select_Window GPIB_Select;
@@ -165,6 +165,8 @@ namespace HP_34401A
         int avg_factor = 1000;
         int avg_resolution = 5;
         int resetMinMaxAvg = 1;
+
+        bool isPreviousModeFast = false;
 
         public MainWindow()
         {
@@ -1113,93 +1115,119 @@ namespace HP_34401A
         {
             try
             {
+                if (SerialWriteQueue.Count > 0 || isUpdateSpeed_Changed == true)
+                {
+                    isUserSendCommand = true;
+                }
+
                 if (isUserSendCommand == true)
                 {
                     Serial_WriteQueue();
-                    Measurement_Type_Select();
+                    Measurement_Type_Select(); 
                     unlockControls();
+
                     isUserSendCommand = false;
-                    Write("INIT");
-                    if (UpdateSpeed > 2000)
-                    {
-                        Restore_Interval();
-                    }
+                    isUpdateSpeed_Changed = false;
+
+                    if (DataSampling == true && UpdateSpeed < 200) Write("INIT");
                 }
 
                 if (DataSampling == true)
                 {
-                    do
+                    if (UpdateSpeed < 200)
+                    {
+                        do
+                        {
+                            Read_Measurement();
+                            Process_Data.Start();
+                            System.Threading.Thread.Sleep(0);
+                        } while (DataSampling == true && SerialWriteQueue.Count == 0 && UpdateSpeed < 200);
+                    }
+                    else
                     {
                         Read_Measurement();
                         Process_Data.Start();
-                    } while (isSamplingOnly == true & DataSampling == true);
+                    }
                 }
-                if (isUpdateSpeed_Changed == true)
-                {
-                    isUpdateSpeed_Changed = false;
-                    insert_Log("Update Speed has been set to " + (UpdateSpeed / 1000) + " seconds.", 0);
-                    DataTimer.Interval = UpdateSpeed;
-                }
-                DataTimer.Enabled = true;
             }
             catch (Exception Ex)
             {
                 this.Dispatcher.Invoke(DispatcherPriority.ContextIdle, new ThreadStart(delegate
                 {
-                    if (Show_COM_Error.IsChecked == true)
-                    {
-                        insert_Log(Ex.Message, 2);
-                        insert_Log("Could not get a measurement reading.", 2);
-                        insert_Log("Don't worry. Trying again.", 2);
-                        insert_Log("Slow the Update Speed if warning persists.", 2);
-                    }
+                    if (Show_COM_Error.IsChecked == true) insert_Log(Ex.Message, 2);
                 }));
-                if (isUpdateSpeed_Changed == true)
-                {
-                    isUpdateSpeed_Changed = false;
-                    insert_Log("Update Speed has been set to " + (UpdateSpeed / 1000) + " seconds.", 0);
-                    DataTimer.Interval = UpdateSpeed;
-                }
                 GPIB_Reconnect();
-                DataTimer.Enabled = true;
             }
             finally
             {
-                DataTimer.Enabled = true;
+                if (DataTimer != null)
+                {
+                    DataTimer.Interval = (UpdateSpeed < 200) ? 1 : UpdateSpeed;
+                    DataTimer.Enabled = true;
+                }
             }
         }
+
         private void Read_Measurement()
         {
-            string dataRaw = Query("FETCH?");
+            bool isFastMode = UpdateSpeed < 200;
 
-            //if (Measurement_Selected == 0 || Measurement_Selected == 1 ||
-            //    Measurement_Selected == 4 || Measurement_Selected == 5)
-            //{
-            //    Write("ZERO:AUTO ONCE");
-            //}
+            if (isFastMode)            {
 
-            Write("INIT");
-
-            if (string.IsNullOrEmpty(dataRaw)) return;
-
-            string[] samples = dataRaw.Split(',');
-            int count = samples.Length;
-
-            DateTime endTime = DateTime.Now;
-            DateTime startTime = endTime.AddMilliseconds(-count);
-
-            for (int i = 0; i < count; i++)
-            {
-                string val = samples[i].Trim();
-                if (val.Length >= 10)
+                try
                 {
-                    DateTime sampleTime = startTime.AddMilliseconds(i);
-                    Process_Measurement_Data(val, sampleTime);
-                    Total_Samples++;
+                    Write("FETCH?");
+                    string dataRaw = formattedIO.ReadString();
+
+                    if (Measurement_Selected == 0 || Measurement_Selected == 1 ||
+                        Measurement_Selected == 4 || Measurement_Selected == 5)
+                    {
+                        Write("ZERO:AUTO ONCE");
+                    }
+
+                    Write("INIT");
+
+                    if (string.IsNullOrEmpty(dataRaw)) return;
+
+                    string[] samples = dataRaw.Split(',');
+                    int count = samples.Length;
+                    DateTime endTime = DateTime.Now;
+                    DateTime startTime = endTime.AddMilliseconds(-count * 1.6);
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        string valStr = samples[i].Trim();
+                        DateTime sampleTime = startTime.AddMilliseconds(i * 1.6);
+
+                        Process_Measurement_Data(valStr, sampleTime);
+                        Total_Samples++;
+
+                        if (i == count - 1) measurements.Add(valStr);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    Invalid_Samples++;
+                    insert_Log("Fast Read Error: " + ex.Message, 1);
+                    try { Write("INIT"); } catch { }
+                }
+            }
+            else
+            {
+                try
+                {
+                    string dataRaw = Query("READ?");
+
+                    if (!string.IsNullOrEmpty(dataRaw))
+                    {
+                        string valStr = dataRaw.Trim();
+                        measurements.Add(valStr); 
+                        Process_Measurement_Data(valStr, DateTime.Now);
+                        Total_Samples++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    insert_Log("Single Read Error: " + ex.Message, 1);
                 }
             }
         }
@@ -1673,138 +1701,57 @@ namespace HP_34401A
 
         private void Measurement_Type_Select()
         {
-            if (Measurement_Selected == 0 || Measurement_Selected == 1 ||
-                Measurement_Selected == 4 || Measurement_Selected == 5)
+            Write("ABORt");
+            Write("*CLS");
+
+            bool isCurrentModeFast = UpdateSpeed < 200;
+
+            if (isCurrentModeFast)
             {
-                Write("ZERO:AUTO ONCE");
+                string fastConfig = ":SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF";
+
+                if (Measurement_Selected == 0) Write($":VOLT:DC:NPLC 0.02; {fastConfig}");
+                else if (Measurement_Selected == 1) Write($":CURR:DC:NPLC 0.02; {fastConfig}");
+                else if (Measurement_Selected == 2) Write($":SENS:DET:BAND 200; {fastConfig}");
+                else if (Measurement_Selected == 3) Write($":SENS:DET:BAND 200; {fastConfig}");
+                else if (Measurement_Selected == 4 || Measurement_Selected == 5) Write($":RES:NPLC 0.02; {fastConfig}");
+                else if (Measurement_Selected == 6 || Measurement_Selected == 7) Write($"{fastConfig}");
+
+                isPreviousModeFast = true;
+            }
+            else
+            {
+                if (isPreviousModeFast == true)
+                {
+                    Write(":SAMP:COUN 1; :TRIG:DEL:AUTO ON; :ZERO:AUTO ON; :DISP ON");
+                    isPreviousModeFast = false;
+                }
             }
 
-            if (Measurement_Selected == 0)
+            Update_UI_Labels();
+        }
+
+        private void Update_UI_Labels()
+        {
+            string unit = "VDC";
+            switch (Measurement_Selected)
             {
-                Write(":VOLT:DC:NPLC 0.02; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
-                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
-                {
-                    Measurement_Type.Content = "VDC";
-                    Measurement_Scale.Content = "";
-                    Measurement_Value.Content = "";
-                    MIN_Type.Content = "VDC";
-                    MAX_Type.Content = "VDC";
-                    AVG_Type.Content = "VDC";
-                    Current_Measurement_Unit = "VDC";
-                }));
+                case 0: unit = "VDC"; break;
+                case 1: unit = "ADC"; break;
+                case 2: unit = "VAC"; break;
+                case 3: unit = "AAC"; break;
+                case 4: case 5: case 9: unit = "Ω"; break;
+                case 6: unit = "Hz"; break;
+                case 7: unit = "SEC"; break;
             }
-            else if (Measurement_Selected == 1)
+
+            this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
             {
-                Write(":CURR:DC:NPLC 0.02; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
-                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
-                {
-                    Measurement_Type.Content = "ADC";
-                    Measurement_Scale.Content = "";
-                    Measurement_Value.Content = "";
-                    MIN_Type.Content = "ADC";
-                    MAX_Type.Content = "ADC";
-                    AVG_Type.Content = "ADC";
-                    Current_Measurement_Unit = "ADC";
-                }));
-            }
-            else if (Measurement_Selected == 2)
-            {
-                Write(":SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
-                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
-                {
-                    Measurement_Type.Content = "VAC";
-                    Measurement_Scale.Content = "";
-                    Measurement_Value.Content = "";
-                    MIN_Type.Content = "VAC";
-                    MAX_Type.Content = "VAC";
-                    AVG_Type.Content = "VAC";
-                    Current_Measurement_Unit = "VAC";
-                }));
-            }
-            else if (Measurement_Selected == 3)
-            {
-                Write(":SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
-                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
-                {
-                    Measurement_Type.Content = "AAC";
-                    Measurement_Scale.Content = "";
-                    Measurement_Value.Content = "";
-                    MIN_Type.Content = "AAC";
-                    MAX_Type.Content = "AAC";
-                    AVG_Type.Content = "AAC";
-                    Current_Measurement_Unit = "AAC";
-                }));
-            }
-            else if (Measurement_Selected == 4 || Measurement_Selected == 5)
-            {
-                Write(":RES:NPLC 0.02; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
-                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
-                {
-                    Measurement_Type.Content = "Ω";
-                    Measurement_Scale.Content = "";
-                    Measurement_Value.Content = "";
-                    MIN_Type.Content = "Ω";
-                    MAX_Type.Content = "Ω";
-                    AVG_Type.Content = "Ω";
-                    Current_Measurement_Unit = "Ω";
-                }));
-            }
-            else if (Measurement_Selected == 6)
-            {                
-                Write(":SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
-                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
-                {
-                    Measurement_Type.Content = "Hz";
-                    Measurement_Scale.Content = "";
-                    Measurement_Value.Content = "";
-                    MIN_Type.Content = "Hz";
-                    MAX_Type.Content = "Hz";
-                    AVG_Type.Content = "Hz";
-                    Current_Measurement_Unit = "Hz";
-                }));
-            }
-            else if (Measurement_Selected == 7)
-            {                
-                Write(":SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
-                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
-                {
-                    Measurement_Type.Content = "SEC";
-                    Measurement_Scale.Content = "";
-                    Measurement_Value.Content = "";
-                    MIN_Type.Content = "SEC";
-                    MAX_Type.Content = "SEC";
-                    AVG_Type.Content = "SEC";
-                    Current_Measurement_Unit = "SEC";
-                }));
-            }
-            else if (Measurement_Selected == 8)
-            {
-                Write("CONF:DIOD; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
-                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
-                {
-                    Measurement_Type.Content = "VDC";
-                    Measurement_Scale.Content = "";
-                    Measurement_Value.Content = "";
-                    MIN_Type.Content = "VDC";
-                    MAX_Type.Content = "VDC";
-                    AVG_Type.Content = "VDC";
-                    Current_Measurement_Unit = "VDC";
-                }));
-            }
-            else if (Measurement_Selected == 9)
-            {
-                Write("CONF:CONT; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
-                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
-                {
-                    Measurement_Type.Content = "Ω";
-                    Measurement_Scale.Content = "";
-                    Measurement_Value.Content = "";
-                    MIN_Type.Content = "Ω";
-                    MAX_Type.Content = "Ω";
-                    AVG_Type.Content = "Ω";
-                    Current_Measurement_Unit = "Ω";
-                }));
-            }
+                Measurement_Type.Content = unit;
+                Current_Measurement_Unit = unit;
+                Measurement_Scale.Content = "";
+                Measurement_Value.Content = "";
+            }));
         }
 
         //Check if user input is a number and if it is then converts it from string to double.
@@ -5535,7 +5482,7 @@ namespace HP_34401A
         private void UpdateSpeed_Default_Set_Button_Click(object sender, RoutedEventArgs e)
         {
             insert_Log("You may to wait for " + (UpdateSpeed / 1000) + " seconds before your new update speed takes effect.", 2);
-            UpdateSpeed = 5;
+            UpdateSpeed = 200;
             insert_Log("Update Speed set to " + (UpdateSpeed / 1000) + " seconds Command Send.", 5);
             UpdateSpeed_Selector(1);
             isUpdateSpeed_Changed = true;
