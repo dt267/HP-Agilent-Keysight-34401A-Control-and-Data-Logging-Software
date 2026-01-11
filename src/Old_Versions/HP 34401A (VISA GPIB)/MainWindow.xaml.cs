@@ -1704,45 +1704,117 @@ namespace HP_34401A
             Write("ABORt");
             Write("*CLS");
 
-            bool isCurrentModeFast = UpdateSpeed < 200;
-
-            if (isCurrentModeFast)
-            {
-                string fastConfig = ":SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF";
-
-                if (Measurement_Selected == 0) Write($":VOLT:DC:NPLC 0.02; {fastConfig}");
-                else if (Measurement_Selected == 1) Write($":CURR:DC:NPLC 0.02; {fastConfig}");
-                else if (Measurement_Selected == 2) Write($":SENS:DET:BAND 200; {fastConfig}");
-                else if (Measurement_Selected == 3) Write($":SENS:DET:BAND 200; {fastConfig}");
-                else if (Measurement_Selected == 4 || Measurement_Selected == 5) Write($":RES:NPLC 0.02; {fastConfig}");
-                else if (Measurement_Selected == 6 || Measurement_Selected == 7) Write($"{fastConfig}");
-
-                isPreviousModeFast = true;
-            }
-            else
-            {
-                if (isPreviousModeFast == true)
+            if (Measurement_Selected == 0)
+            {                
+                Write(":VOLT:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
-                    Write(":SAMP:COUN 1; :TRIG:DEL:AUTO ON; :ZERO:AUTO ON; :DISP ON");
-                    isPreviousModeFast = false;
-                }
+                    Measurement_Type.Content = "VDC";
+                    Measurement_Scale.Content = "";
+                    Measurement_Value.Content = "";
+                    MIN_Type.Content = "VDC";
+                    MAX_Type.Content = "VDC";
+                    AVG_Type.Content = "VDC";
+                    Current_Measurement_Unit = "VDC";
+                }));
             }
-
-            Update_UI_Labels();
-        }
-
-        private void Update_UI_Labels()
-        {
-            string unit = "VDC";
-            switch (Measurement_Selected)
+            else if (Measurement_Selected == 1)
+            {                
+                Write(":CURR:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
+                {
+                    Measurement_Type.Content = "ADC";
+                    Measurement_Scale.Content = "";
+                    Measurement_Value.Content = "";
+                    MIN_Type.Content = "ADC";
+                    MAX_Type.Content = "ADC";
+                    AVG_Type.Content = "ADC";
+                    Current_Measurement_Unit = "ADC";
+                }));
+            }
+            else if (Measurement_Selected == 2)
+            {                
+                Write(":SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
+                {
+                    Measurement_Type.Content = "VAC";
+                    Measurement_Scale.Content = "";
+                    Measurement_Value.Content = "";
+                    MIN_Type.Content = "VAC";
+                    MAX_Type.Content = "VAC";
+                    AVG_Type.Content = "VAC";
+                    Current_Measurement_Unit = "VAC";
+                }));
+            }
+            else if (Measurement_Selected == 3)
+            {                
+                Write(":SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
+                {
+                    Measurement_Type.Content = "AAC";
+                    Measurement_Scale.Content = "";
+                    Measurement_Value.Content = "";
+                    MIN_Type.Content = "AAC";
+                    MAX_Type.Content = "AAC";
+                    AVG_Type.Content = "AAC";
+                    Current_Measurement_Unit = "AAC";
+                }));
+            }
+            else if (Measurement_Selected == 4 || Measurement_Selected == 5)
             {
-                case 0: unit = "VDC"; break;
-                case 1: unit = "ADC"; break;
-                case 2: unit = "VAC"; break;
-                case 3: unit = "AAC"; break;
-                case 4: case 5: case 9: unit = "Ω"; break;
-                case 6: unit = "Hz"; break;
-                case 7: unit = "SEC"; break;
+                Write("CONF:RES; :RES:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
+                {
+                    Measurement_Type.Content = "Ω";
+                    Measurement_Scale.Content = "";
+                    Measurement_Value.Content = "";
+                    MIN_Type.Content = "Ω";
+                    MAX_Type.Content = "Ω";
+                    AVG_Type.Content = "Ω";
+                    Current_Measurement_Unit = "Ω";
+                }));
+            }
+            else if (Measurement_Selected == 6)
+            {
+                Write("CONF:FREQ; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
+                {
+                    Measurement_Type.Content = "Hz";
+                    Measurement_Scale.Content = "";
+                    Measurement_Value.Content = "";
+                    MIN_Type.Content = "Hz";
+                    MAX_Type.Content = "Hz";
+                    AVG_Type.Content = "Hz";
+                    Current_Measurement_Unit = "Hz";
+                }));
+            }
+            else if (Measurement_Selected == 7)
+            {
+                Write("CONF:PER; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
+                {
+                    Measurement_Type.Content = "SEC";
+                    Measurement_Scale.Content = "";
+                    Measurement_Value.Content = "";
+                    MIN_Type.Content = "SEC";
+                    MAX_Type.Content = "SEC";
+                    AVG_Type.Content = "SEC";
+                    Current_Measurement_Unit = "SEC";
+                }));
+            }
+            else if (Measurement_Selected == 8)
+            {
+                Write("CONF:DIOD; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
+                {
+                    Measurement_Type.Content = "VDC";
+                    Measurement_Scale.Content = "";
+                    Measurement_Value.Content = "";
+                    MIN_Type.Content = "VDC";
+                    MAX_Type.Content = "VDC";
+                    AVG_Type.Content = "VDC";
+                    Current_Measurement_Unit = "VDC";
+                }));
             }
 
             this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
