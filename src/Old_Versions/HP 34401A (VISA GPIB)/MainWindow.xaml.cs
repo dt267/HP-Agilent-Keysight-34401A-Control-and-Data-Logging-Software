@@ -1172,11 +1172,11 @@ namespace HP_34401A
         {
             string dataRaw = Query("FETCH?");
 
-            if (Measurement_Selected == 0 || Measurement_Selected == 1 ||
-                Measurement_Selected == 4 || Measurement_Selected == 5)
-            {
-                Write("ZERO:AUTO ONCE");
-            }
+            //if (Measurement_Selected == 0 || Measurement_Selected == 1 ||
+            //    Measurement_Selected == 4 || Measurement_Selected == 5)
+            //{
+            //    Write("ZERO:AUTO ONCE");
+            //}
 
             Write("INIT");
 
@@ -1673,6 +1673,12 @@ namespace HP_34401A
 
         private void Measurement_Type_Select()
         {
+            if (Measurement_Selected == 0 || Measurement_Selected == 1 ||
+                Measurement_Selected == 4 || Measurement_Selected == 5)
+            {
+                Write("ZERO:AUTO ONCE");
+            }
+
             if (Measurement_Selected == 0)
             {
                 Write("CONF:VOLT:DC 10; :VOLT:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
