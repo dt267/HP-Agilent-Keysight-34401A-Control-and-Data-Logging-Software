@@ -1681,7 +1681,7 @@ namespace HP_34401A
 
             if (Measurement_Selected == 0)
             {
-                Write("CONF:VOLT:DC 10; :VOLT:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                Write(":VOLT:DC:NPLC 0.02; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "VDC";
@@ -1695,7 +1695,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 1)
             {
-                Write("CONF:CURR:DC 1; :CURR:DC:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                Write(":CURR:DC:NPLC 0.02; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "ADC";
@@ -1709,7 +1709,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 2)
             {
-                Write("CONF:VOLT:AC 10; :SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                Write(":SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "VAC";
@@ -1723,7 +1723,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 3)
             {
-                Write("CONF:CURR:AC 1; :SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                Write(":SENS:DET:BAND 200; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "AAC";
@@ -1737,7 +1737,7 @@ namespace HP_34401A
             }
             else if (Measurement_Selected == 4 || Measurement_Selected == 5)
             {
-                Write("CONF:RES; :RES:NPLC 0.02; :ZERO:AUTO OFF; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+                Write(":RES:NPLC 0.02; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "Ω";
@@ -1750,8 +1750,8 @@ namespace HP_34401A
                 }));
             }
             else if (Measurement_Selected == 6)
-            {
-                Write("CONF:FREQ; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+            {                
+                Write(":SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "Hz";
@@ -1764,8 +1764,8 @@ namespace HP_34401A
                 }));
             }
             else if (Measurement_Selected == 7)
-            {
-                Write("CONF:PER; :SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
+            {                
+                Write(":SAMP:COUN 512; :TRIG:SOUR IMM; :TRIG:DEL 0; :DISP OFF");
                 this.Dispatcher.Invoke(DispatcherPriority.Background, new ThreadStart(delegate
                 {
                     Measurement_Type.Content = "SEC";
