@@ -1172,6 +1172,15 @@ namespace HP_34401A
         {
             string dataRaw = Query("FETCH?");
 
+            // Thực hiện Zero (Calibration) cho lô tiếp theo
+            // Chỉ thực hiện với DCV (0), DCI (1), 2W Ohm (4), 4W Ohm (5)
+            if (Measurement_Selected == 0 || Measurement_Selected == 1 ||
+                Measurement_Selected == 4 || Measurement_Selected == 5)
+            {
+                // Lệnh này đo điểm 0 1 lần, cập nhật offset, rồi tự chuyển về OFF
+                Write("ZERO:AUTO ONCE");
+            }
+
             Write("INIT");
 
             if (string.IsNullOrEmpty(dataRaw)) return;
