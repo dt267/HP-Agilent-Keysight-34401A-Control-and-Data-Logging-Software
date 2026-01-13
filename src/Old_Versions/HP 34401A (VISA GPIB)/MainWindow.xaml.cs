@@ -6642,17 +6642,14 @@ namespace HP_34401A
 
             if (GPIB_Address_Info.isConnected == true)
             {
-                if (UpdateSpeed < 200 || isPreviousModeFast == true)
+                try
                 {
-                    try
-                    {
-                        Write("ABORt");
-                        Write("*CLS");
-                        Write(":SAMP:COUN 1; :TRIG:DEL:AUTO ON; :ZERO:AUTO ON; :DISP ON");
-                    }
-                    catch (Exception)
-                    {
-                    }
+                    Write("ABORt");
+                    Write("*CLS");
+                    Write(":SAMP:COUN 1; :TRIG:DEL:AUTO ON; :ZERO:AUTO ON; :DISP ON");
+                }
+                catch (Exception)
+                {
                 }
             }
         }
