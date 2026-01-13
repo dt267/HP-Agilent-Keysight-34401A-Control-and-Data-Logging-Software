@@ -1912,6 +1912,7 @@ namespace HP_34401A
 
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
+            Restore_Slow_Mode_On_Exit();
             Application.Current.Shutdown();
         }
 
@@ -6472,10 +6473,11 @@ namespace HP_34401A
 
         private void Main_Window_Closed(object sender, EventArgs e)
         {
+            Restore_Slow_Mode_On_Exit();
             try
             {
                 if (GPIB_Address_Info.isConnected == true)
-                {
+                {                
                     if (GPIB_Lock == 1)
                     {
                         session.UnlockResource();
@@ -6634,6 +6636,27 @@ namespace HP_34401A
                 FSI_Display.IsChecked = false;
                 Partial_SI_Prefix = true;
                 Full_SI_Prefix = false;
+            }
+        }
+
+        private void Restore_Slow_Mode_On_Exit()
+        {
+            DataSampling = false;
+
+            if (GPIB_Address_Info.isConnected == true)
+            {
+                if (UpdateSpeed < 200 || isPreviousModeFast == true)
+                {
+                    try
+                    {
+                        Write("ABORt");
+                        Write("*CLS");
+                        Write(":SAMP:COUN 1; :TRIG:DEL:AUTO ON; :ZERO:AUTO ON; :DISP ON");
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
             }
         }
     }
