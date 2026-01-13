@@ -28,7 +28,6 @@
                 <MenuItem x:Name="Connect" Header="Connect" IsCheckable="False" IsChecked="False" Click="Connect_Click"/>
                 <MenuItem x:Name="Stop_Sampling" Header="Sampling" IsCheckable="True" IsChecked="True" Click="Stop_Sampling_Click" IsEnabled="False"/>
                 <MenuItem x:Name="Sampling_Only" Header="Sampling Only" IsCheckable="True" IsChecked="False" IsEnabled="False" Click="Sampling_Only_Click"/>
-                <MenuItem x:Name="Local_Exit" Header="Local Exit" IsCheckable="False" IsEnabled="False" Click="Local_Exit_Click" Visibility="Hidden"/>
                 <MenuItem x:Name="Exit" Header="Exit" IsCheckable="False" IsChecked="False" Click="Exit_Click"/>
             </MenuItem>
             <MenuItem Header="Display Panel" IsCheckable="False" IsChecked="False">

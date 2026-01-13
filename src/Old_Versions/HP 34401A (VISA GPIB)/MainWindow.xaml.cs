@@ -449,7 +449,6 @@ namespace HP_34401A
                 Data_process();
                 saveMeasurements_Timer.Enabled = true;
                 Sampling_Only.IsEnabled = true;
-                Local_Exit.IsEnabled = true;
                 DataLogger.IsEnabled = true;
             }
         }
@@ -1889,13 +1888,11 @@ namespace HP_34401A
             if (Sampling_Only.IsChecked == true)
             {
                 isSamplingOnly = true;
-                Local_Exit.IsEnabled = false;
                 lockControls();
             }
             else
             {
                 isSamplingOnly = false;
-                Local_Exit.IsEnabled = true;
                 unlockControls();
             }
             if (isSamplingOnly == true)
