@@ -1178,11 +1178,11 @@ namespace HP_34401A
                     Write("FETCH?");
                     string dataRaw = formattedIO.ReadString();
 
-                    if (Measurement_Selected == 0 || Measurement_Selected == 1 ||
-                        Measurement_Selected == 4 || Measurement_Selected == 5)
-                    {
-                        Write("ZERO:AUTO ONCE");
-                    }
+                    //if (Measurement_Selected == 0 || Measurement_Selected == 1 ||
+                    //    Measurement_Selected == 4 || Measurement_Selected == 5)
+                    //{
+                    //    Write("ZERO:AUTO ONCE");
+                    //}
 
                     Write("INIT");
 
@@ -1715,6 +1715,11 @@ namespace HP_34401A
                 else if (Measurement_Selected == 3) Write($":SENS:DET:BAND 200; {fastConfig}");
                 else if (Measurement_Selected == 4 || Measurement_Selected == 5) Write($":RES:NPLC 0.02; {fastConfig}");
                 else if (Measurement_Selected == 6 || Measurement_Selected == 7) Write($"{fastConfig}");
+
+                if (Measurement_Selected == 0 || Measurement_Selected == 1 || Measurement_Selected == 4 || Measurement_Selected == 5)
+                {
+                    Write("ZERO:AUTO ONCE");
+                }
 
                 isPreviousModeFast = true;
             }
